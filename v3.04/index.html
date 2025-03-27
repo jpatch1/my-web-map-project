@@ -1,0 +1,161 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8" />
+  <title>Integrated Trip Map</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no" />
+
+  <!-- Mapbox GL JS -->
+  <script src="https://api.mapbox.com/mapbox-gl-js/v2.12.0/mapbox-gl.js"></script>
+  <link href="https://api.mapbox.com/mapbox-gl-js/v2.12.0/mapbox-gl.css" rel="stylesheet" />
+
+  <!-- Mapbox GL Geocoder -->
+  <script src="https://api.mapbox.com/mapbox-gl-js/plugins/mapbox-gl-geocoder/v4.7.2/mapbox-gl-geocoder.min.js"></script>
+  <link rel="stylesheet" href="https://api.mapbox.com/mapbox-gl-js/plugins/mapbox-gl-geocoder/v4.7.2/mapbox-gl-geocoder.css" type="text/css" />
+
+  <!-- Mapbox GL Directions -->
+  <script src="https://api.mapbox.com/mapbox-gl-js/plugins/mapbox-gl-directions/v4.1.1/mapbox-gl-directions.js"></script>
+  <link rel="stylesheet" href="https://api.mapbox.com/mapbox-gl-js/plugins/mapbox-gl-directions/v4.1.1/mapbox-gl-directions.css" type="text/css" />
+
+  <!-- exif-js for reading EXIF data -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/exif-js/2.3.0/exif.min.js"></script>
+
+  <!-- Our Custom Styles -->
+  <link rel="stylesheet" href="css/style.css" />
+</head>
+<body>
+  <!-- Map Container -->
+  <div id="map"></div>
+
+  <!-- Perimeter Controls -->
+  <div id="top-controls">
+    <select id="basemapSelect">
+      <option value="mapbox://styles/mapbox/streets-v12">Streets</option>
+      <option value="mapbox://styles/mapbox/outdoors-v12">Outdoors</option>
+      <option value="mapbox://styles/mapbox/light-v10">Light</option>
+      <option value="mapbox://styles/mapbox/dark-v10">Dark</option>
+      <option value="mapbox://styles/mapbox/satellite-v9">Satellite</option>
+      <option value="mapbox://styles/mapbox/satellite-streets-v12">Satellite Streets</option>
+    </select>
+    <button id="planFutureTripButton">Plan/Edit New Trips</button>
+    <select id="tripSelect" multiple>
+      <option value="">None</option>
+    </select>
+    <button id="openDeleteTripModalButton">Delete Planned Trip</button>
+    <div id="editingControls" style="display: none;">
+      <button id="saveTripChangesButton" class="btn-save">Save Changes</button>
+      <button id="discardTripChangesButton" class="btn-discard">Discard Changes</button>
+      <button id="exitEditTripButton" class="btn-exit">Exit Edit Mode</button>
+    </div>
+  </div>
+  <div id="bottom-controls">
+    <div id="cursor-coords">Lat: --, Lng: --</div>
+    <div id="route-info"></div>
+    <div id="tripDistances"></div>
+  </div>
+  <div id="right-controls">
+    <button id="editStopButton">Edit Stops</button>
+    <button id="streetViewButton">Street View</button>
+    <input type="file" id="photoInput" accept="image/*" />
+    <button id="addWaypointButton">Add Waypoint</button>
+    <label><input type="checkbox" id="routingToggle" /> Routing</label>
+    <label><input type="checkbox" id="markerToggle" checked /> Show Stops</label>
+    <label><input type="checkbox" id="parksToggle" /> National Parks</label>
+    <select id="labelSelect">
+      <option value="">No Label</option>
+      <option value="name">Name</option>
+      <option value="address">Address</option>
+      <option value="year">Year</option>
+    </select>
+  </div>
+
+  <!-- Extra UI Elements -->
+  <div id="drop-zone">Drop your photo here</div>
+
+  <!-- Modals -->
+  <div id="photoModal">
+    <span id="closeModal">×</span>
+    <div id="modalContent">
+      <img id="largePhoto" alt="Large Photo">
+    </div>
+  </div>
+  <div id="streetViewProviderModal">
+    <div id="providerModalContent">
+      <label for="providerSelect">Select Street View Provider:</label>
+      <select id="providerSelect">
+        <option value="apple">Apple Look Around</option>
+        <option value="bing">Bing Maps</option>
+        <option value="google">Google Maps</option>
+        <option value="kartaview">KartaView</option>
+        <option value="mapillary">Mapillary</option>
+      </select>
+      <br>
+      <button id="providerConfirm">Confirm</button>
+      <button id="providerCancel">Cancel</button>
+    </div>
+  </div>
+  <div id="editStopModal">
+    <div id="editStopModalContent">
+      <label for="editStopName">Stop Name:</label>
+      <input type="text" id="editStopName" placeholder="Enter name" />
+      <label for="editStopAddress">Address:</label>
+      <input type="text" id="editStopAddress" placeholder="Enter address" />
+      <label for="editStopLatitude">Latitude:</label>
+      <input type="number" id="editStopLatitude" step="any" readonly />
+      <label for="editStopLongitude">Longitude:</label>
+      <input type="number" id="editStopLongitude" step="any" readonly />
+      <label for="editStopYear">Year (Optional):</label>
+      <input type="number" id="editStopYear" placeholder="Enter year" />
+      <br>
+      <button id="editStopSubmit">Save</button>
+      <button id="deleteStop">🗑 Delete</button>
+      <button id="editStopCancel">Cancel</button>
+    </div>
+  </div>
+  <div id="futureTripModal">
+    <div id="futureTripModalContent">
+      <label for="futureTripSelect">Select Trip:</label>
+      <select id="futureTripSelect">
+        <option value="new">New Trip</option>
+      </select>
+      <label for="futureTripNameInput" id="tripNameLabel">Trip Name:</label>
+      <input type="text" id="futureTripNameInput" placeholder="Enter trip name" />
+      <br>
+      <button id="futureTripEnter">Enter</button>
+      <button id="futureTripCancel">Cancel</button>
+    </div>
+  </div>
+  <div id="editTripPointModal">
+    <div id="editTripPointModalContent">
+      <label for="editPointName">Point Name:</label>
+      <input type="text" id="editPointName" placeholder="Enter point name" />
+      <label for="editPointDate">Date:</label>
+      <input type="date" id="editPointDate" />
+      <label for="editPointComments">Comments:</label>
+      <textarea id="editPointComments" placeholder="Enter comments"></textarea>
+      <label for="editPointOrder">Order:</label>
+      <input type="number" id="editPointOrder" />
+      <br>
+      <button id="editTripPointSave">Save</button>
+      <button id="editTripPointCancel">Cancel</button>
+    </div>
+  </div>
+  <div id="deleteTripModal" style="display: none;">
+    <div id="deleteTripModalContent">
+      <label for="deleteTripSelect">Select Future Trip to Delete:</label>
+      <select id="deleteTripSelect"></select>
+      <br><br>
+      <button id="confirmDeleteTrip">Delete</button>
+      <button id="cancelDeleteTripModal">Cancel</button>
+    </div>
+  </div>
+
+  <!-- Load our JS files -->
+  <script src="js/globals.js"></script>
+  <script src="js/mapSetup.js"></script>
+  <script src="js/tripPlanning.js"></script>
+  <script src="js/markers.js"></script>
+  <script src="js/photos.js"></script>
+  <script src="js/streetView.js"></script>
+</body>
+</html>
