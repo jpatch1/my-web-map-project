@@ -1,0 +1,583 @@
+/* css/style.css */
+
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+body {
+  font-family: 'Helvetica Neue', Arial, sans-serif;
+  background-color: #f4f4f4;
+  color: #333;
+}
+#map {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+}
+.sidebar {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 300px;
+  height: auto; /* Allow the sidebar to shrink to fit content */
+  max-height: 50vh; /* Limit the maximum height to 50% of the viewport */
+  background-color: #fff;
+  box-shadow: 2px 0 5px rgba(0,0,0,0.1);
+  overflow-y: auto;
+  transition: transform 0.3s ease; /* Smooth sliding animation */
+  transform: translateX(0); /* Default: fully visible */
+  z-index: 2000; /* Increased to be above markers */
+}
+.sidebar.collapsed {
+  transform: translateX(-100%); /* Slide off to the left */
+}
+.sidebar-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  background-color: #0078D7;
+  color: #fff;
+  padding: 10px;
+}
+.sidebar-header h2 {
+  font-size: 18px;
+}
+#toggleSidebar {
+  background: none;
+  border: none;
+  color: #fff;
+  font-size: 20px;
+  cursor: pointer;
+}
+.show-controls {
+  position: fixed;
+  top: 10px;
+  left: 10px;
+  z-index: 3000; /* Increased to be above sidebar and markers */
+  background-color: #0078D7;
+  color: #fff;
+  border: none;
+  padding: 8px;
+  border-radius: 3px;
+  cursor: pointer;
+  display: block; /* Always present, toggled with JS */
+}
+.sidebar-tabs ul {
+  list-style: none;
+  display: flex;
+  border-bottom: 1px solid #ccc;
+}
+.sidebar-tabs ul li {
+  flex: 1;
+  text-align: center;
+  padding: 8px;
+  cursor: pointer;
+  font-size: 14px;
+  background-color: #f4f4f4;
+  transition: background-color 0.3s;
+}
+.sidebar-tabs ul li.active,
+.sidebar-tabs ul li:hover {
+  background-color: #e0e0e0;
+}
+.sidebar-content {
+  padding: 10px;
+}
+.tab-content {
+  display: none;
+}
+.tab-content.active {
+  display: block;
+}
+.control-group {
+  margin-bottom: 10px;
+}
+.control-group label {
+  display: block;
+  margin-bottom: 4px;
+  font-size: 13px;
+}
+.control-group select,
+.control-group input[type="file"],
+.control-group input[type="checkbox"],
+.control-group button,
+.control-group input[type="text"],
+.control-group input[type="number"],
+.control-group input[type="date"],
+.control-group textarea {
+  width: 100%;
+  padding: 6px;
+  font-size: 13px;
+  border: 1px solid #ccc;
+  border-radius: 3px;
+}
+.control-group button {
+  cursor: pointer;
+  transition: background-color 0.3s;
+}
+#drop-zone {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(0,0,0,0.3);
+  display: none;
+  align-items: center;
+  justify-content: center;
+  font-family: Arial, sans-serif;
+  font-size: 24px;
+  color: #fff;
+  z-index: 50;
+}
+#cursor-coords {
+  position: absolute;
+  bottom: 10px;
+  left: 10px;
+  z-index: 10;
+  background: rgba(255,255,255,0.8);
+  padding: 5px 10px;
+  border: 1px solid #ccc;
+  border-radius: 3px;
+  font-size: 12px;
+}
+#route-info {
+  position: absolute;
+  bottom: 10px;
+  right: 10px;
+  background: rgba(255,255,255,0.9);
+  padding: 5px 10px;
+  border-radius: 3px;
+  font-size: 12px;
+  z-index: 10;
+}
+#tripDistances {
+  position: absolute;
+  bottom: 40px;
+  right: 10px;
+  background: rgba(255,255,255,0.9);
+  padding: 5px 10px;
+  border-radius: 3px;
+  font-size: 12px;
+  z-index: 10;
+}
+
+/* Marker styles */
+.marker {
+  background-image: url('https://maps.google.com/mapfiles/ms/icons/red-pushpin.png');
+  background-size: contain;
+  background-repeat: no-repeat;
+  background-position: center bottom;
+  width: 30px;
+  height: 40px;
+  cursor: pointer;
+  z-index: 1000;
+}
+.photo-marker {
+  background-image: url('https://maps.google.com/mapfiles/ms/icons/blue-pushpin.png');
+  background-size: contain;
+  background-repeat: no-repeat;
+  background-position: center bottom;
+  width: 30px;
+  height: 40px;
+  cursor: pointer;
+  z-index: 1000;
+}
+.future-marker {
+  background-image: url('https://maps.google.com/mapfiles/kml/pushpin/purple-pushpin.png');
+  background-size: contain;
+  background-repeat: no-repeat;
+  background-position: center bottom;
+  width: 30px;
+  height: 40px;
+  cursor: pointer;
+  z-index: 1001;
+}
+.future-marker .marker-number {
+  position: absolute;
+  top: -10px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: white;
+  border: 1px solid #000;
+  border-radius: 50%;
+  width: 20px;
+  height: 20px;
+  text-align: center;
+  line-height: 18px;
+  font-size: 12px;
+  font-weight: bold;
+}
+
+/* Button default styles */
+.btn-save {
+  background-color: #4CAF50;
+  color: white;
+  margin-right: 5px;
+  border: none;
+  padding: 5px 10px;
+}
+.btn-discard {
+  background-color: #f44336;
+  color: white;
+  margin-right: 5px;
+  border: none;
+  padding: 5px 10px;
+}
+.btn-exit {
+  background-color: #777;
+  color: white;
+  border: none;
+  padding: 5px 10px;
+}
+
+.street-view-marker {
+  background-image: url('https://maps.google.com/mapfiles/kml/pushpin/ylw-pushpin.png');
+  background-size: contain;
+  background-repeat: no-repeat;
+  background-position: center bottom;
+  width: 23px;
+  height: 48px;
+  cursor: pointer;
+  z-index: 1003;
+}
+
+/* Default styles for modal buttons (if not using btn classes) */
+#futureTripEnter, #futureTripCancel, #editTripPointSave, #editTripPointCancel {
+  background-color: #4CAF50;
+  color: white;
+  padding: 5px 10px;
+  border: none;
+  border-radius: 3px;
+}
+
+/* Zoom scale control */
+.zoom-scale-control {
+  position: absolute;
+  bottom: 10px;
+  left: calc(10px + 200px);
+  z-index: 10;
+  font-family: Arial, sans-serif;
+  font-size: 12px;
+  background: white;
+  padding: 5px;
+  border: 1px solid gray;
+  border-radius: 4px;
+}
+
+/* Modal styles */
+#photoModal {
+  display: none;
+  position: fixed;
+  z-index: 1004;
+  left: 0;
+  top: 0;
+  width: 100%;
+  height: 100%;
+  overflow: auto;
+  background-color: rgba(0,0,0,0.5);
+}
+#modalContent {
+  background-color: white;
+  margin: 15% auto;
+  padding: 20px;
+  border: 1px solid #ccc;
+  border-radius: 5px;
+  width: 80%;
+  max-width: 600px;
+  text-align: center;
+}
+#largePhoto {
+  max-width: 100%;
+  height: auto;
+}
+#closeModal {
+  position: absolute;
+  right: 20px;
+  top: 20px;
+  font-size: 24px;
+  font-weight: bold;
+  color: #000;
+  cursor: pointer;
+}
+#streetViewProviderModal {
+  display: none;
+  position: fixed;
+  z-index: 1004;
+  left: 0;
+  top: 0;
+  width: 100%;
+  height: 100%;
+  overflow: auto;
+  background-color: rgba(0,0,0,0.5);
+}
+#providerModalContent {
+  background-color: white;
+  margin: 15% auto;
+  padding: 20px;
+  border: 1px solid #ccc;
+  border-radius: 5px;
+  width: 80%;
+  max-width: 300px;
+  font-family: Arial, sans-serif;
+}
+#providerSelect {
+  width: 100%;
+  margin-bottom: 10px;
+  padding: 5px;
+  font-size: 14px;
+  border: 1px solid #ccc;
+  border-radius: 3px;
+}
+#providerConfirm, #providerCancel {
+  padding: 5px 10px;
+  margin-right: 10px;
+  font-size: 14px;
+  cursor: pointer;
+}
+#providerConfirm {
+  background-color: #4CAF50;
+  color: white;
+  border: none;
+  border-radius: 3px;
+}
+#providerConfirm:hover {
+  background-color: #45a049;
+}
+#providerCancel {
+  background-color: #f44336;
+  color: white;
+  border: none;
+  border-radius: 3px;
+}
+#providerCancel:hover {
+  background-color: #da190b;
+}
+#addCampgroundModal,
+#editCampgroundModal {
+  display: none;
+  position: fixed;
+  z-index: 1004;
+  left: 0;
+  top: 0;
+  width: 100%;
+  height: 100%;
+  overflow: auto;
+  background-color: rgba(0,0,0,0.5);
+}
+#addCampgroundModalContent,
+#editCampgroundModalContent {
+  background-color: white;
+  margin: 15% auto;
+  padding: 20px;
+  border: 1px solid #ccc;
+  border-radius: 5px;
+  width: 80%;
+  max-width: 400px;
+  font-family: Arial, sans-serif;
+}
+#addCampgroundModalContent label,
+#editCampgroundModalContent label {
+  display: block;
+  margin-bottom: 5px;
+  font-size: 14px;
+}
+#addCampgroundModalContent input,
+#editCampgroundModalContent input,
+#editCampgroundModalContent select {
+  width: 100%;
+  padding: 5px;
+  margin-bottom: 10px;
+  border: 1px solid #ccc;
+  border-radius: 3px;
+  font-size: 14px;
+}
+#addCampgroundSubmit,
+#editCampgroundSubmit,
+#addCampgroundCancel,
+#editCampgroundCancel,
+#deleteCampground {
+  padding: 5px 10px;
+  margin-right: 10px;
+  font-size: 14px;
+  cursor: pointer;
+}
+#addCampgroundSubmit,
+#editCampgroundSubmit {
+  background-color: #4CAF50;
+  color: white;
+  border: none;
+  border-radius: 3px;
+}
+#addCampgroundSubmit:hover,
+#editCampgroundSubmit:hover {
+  background-color: #45a049;
+}
+#addCampgroundCancel,
+#editCampgroundCancel {
+  background-color: #f44336;
+  color: white;
+  border: none;
+  border-radius: 3px;
+}
+#addCampgroundCancel:hover,
+#editCampgroundCancel:hover {
+  background-color: #da190b;
+}
+#deleteCampground {
+  background-color: #ff4444;
+  color: white;
+  border: none;
+  border-radius: 3px;
+}
+#deleteCampground:hover {
+  background-color: #cc0000;
+}
+#futureTripModal,
+#editTripPointModal {
+  display: none;
+  position: fixed;
+  z-index: 1004;
+  left: 0;
+  top: 0;
+  width: 100%;
+  height: 100%;
+  overflow: auto;
+  background-color: rgba(0,0,0,0.5);
+}
+#futureTripModalContent,
+#editTripPointModalContent {
+  background-color: white;
+  margin: 15% auto;
+  padding: 20px;
+  border: 1px solid #ccc;
+  border-radius: 5px;
+  width: 80%;
+  max-width: 400px;
+  font-family: Arial, sans-serif;
+}
+#futureTripModalContent label,
+#editTripPointModalContent label {
+  display: block;
+  margin-bottom: 5px;
+  font-size: 14px;
+}
+#futureTripModalContent input,
+#futureTripModalContent select,
+#editTripPointModalContent input,
+#editTripPointModalContent textarea {
+  width: 100%;
+  padding: 5px;
+  margin-bottom: 10px;
+  border: 1px solid #ccc;
+  border-radius: 3px;
+  font-size: 14px;
+}
+#futureTripNameInput {
+  display: none;
+}
+#futureTripEnter,
+#futureTripCancel,
+#editTripPointSave,
+#editTripPointCancel {
+  padding: 5px 10px;
+  margin-right: 10px;
+  font-size: 14px;
+  cursor: pointer;
+}
+#futureTripCancel:hover,
+#editTripPointCancel:hover {
+  background-color: #da190b;
+}
+#futureTripEnter:hover,
+#editTripPointSave:hover {
+  background-color: #45a049;
+}
+
+/* Delete Trip Modal styles */
+#deleteTripModal {
+  display: none;
+  position: fixed;
+  z-index: 1005;
+  left: 0;
+  top: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(0,0,0,0.5);
+}
+#deleteTripModalContent {
+  background-color: white;
+  margin: 15% auto;
+  padding: 20px;
+  border: 1px solid #ccc;
+  border-radius: 5px;
+  width: 80%;
+  max-width: 400px;
+  text-align: center;
+}
+.edit-marker {
+  background-image: url('https://maps.google.com/mapfiles/kml/pushpin/grn-pushpin.png');
+  background-size: contain;
+  background-repeat: no-repeat;
+  background-position: center bottom;
+  width: 30px;
+  height: 40px;
+  cursor: move;
+  z-index: 1002;
+}
+
+/* Responsive adjustments for smaller screens */
+@media (max-width: 768px) {
+  .sidebar {
+    width: 200px; /* Reduce width on smaller screens */
+    max-height: 40vh; /* Further reduce height */
+  }
+}
+
+@media (max-width: 480px) {
+  .sidebar {
+    width: 150px; /* Further reduce width on very small screens */
+    max-height: 30vh; /* Further reduce height */
+    font-size: 12px; /* Smaller font size */
+  }
+}
+
+/* Custom styles for the Mapbox Geocoder */
+.mapboxgl-ctrl-geocoder {
+  background-color: #fff;
+  border: 1px solid #ccc;
+  border-radius: 20px; /* Rounded corners for a professional look */
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1); /* Subtle shadow */
+  font-family: 'Helvetica Neue', Arial, sans-serif;
+  z-index: 2500; /* Ensure it appears above the sidebar and markers */
+}
+
+.mapboxgl-ctrl-geocoder input[type="text"] {
+  padding: 8px 30px 8px 40px; /* Add padding to avoid overlap with the spyglass */
+  font-size: 14px;
+  color: #333;
+  border: none;
+  border-radius: 20px;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.mapboxgl-ctrl-geocoder input[type="text"]::placeholder {
+  color: #888; /* Lighter grey for placeholder text */
+  font-style: italic;
+}
+
+.mapboxgl-ctrl-geocoder .geocoder-pin-right {
+  display: none; /* Hide the default clear button if present */
+}
+
+.mapboxgl-ctrl-geocoder .mapboxgl-ctrl-geocoder--icon-search {
+  left: 10px; /* Position the spyglass icon */
+  top: 50%;
+  transform: translateY(-50%);
+  width: 20px;
+  height: 20px;
+}

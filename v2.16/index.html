@@ -1,0 +1,234 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8" />
+  <title>Integrated RV Trip Map</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no" />
+
+  <!-- Mapbox GL JS -->
+  <script src="https://api.mapbox.com/mapbox-gl-js/v2.12.0/mapbox-gl.js"></script>
+  <link href="https://api.mapbox.com/mapbox-gl-js/v2.12.0/mapbox-gl.css" rel="stylesheet" />
+
+  <!-- Mapbox GL Geocoder -->
+  <script src="https://api.mapbox.com/mapbox-gl-js/plugins/mapbox-gl-geocoder/v4.7.2/mapbox-gl-geocoder.min.js"></script>
+  <link rel="stylesheet" href="https://api.mapbox.com/mapbox-gl-js/plugins/mapbox-gl-geocoder/v4.7.2/mapbox-gl-geocoder.css" type="text/css" />
+
+  <!-- Mapbox GL Directions -->
+  <script src="https://api.mapbox.com/mapbox-gl-js/plugins/mapbox-gl-directions/v4.1.1/mapbox-gl-directions.js"></script>
+  <link rel="stylesheet" href="https://api.mapbox.com/mapbox-gl-js/plugins/mapbox-gl-directions/v4.1.1/mapbox-gl-directions.css" type="text/css" />
+
+  <!-- exif-js for reading EXIF data -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/exif-js/2.3.0/exif.min.js"></script>
+
+  <!-- Our Custom Styles -->
+  <link rel="stylesheet" href="css/style.css" />
+</head>
+<body>
+  <!-- Map Container -->
+  <div id="map"></div>
+  <!-- Removed old top-right Save Route button -->
+
+  <button id="showControls" class="show-controls">☰ Controls</button>
+
+  <div id="sidebar" class="sidebar">
+    <div class="sidebar-header">
+      <h2>RV Trip Map</h2>
+      <button id="toggleSidebar">✖</button>
+    </div>
+    <div class="sidebar-tabs">
+      <ul>
+        <li data-tab="mapSettings" class="active">Map Settings</li>
+        <li data-tab="tripPlanning">Trip Planning</li>
+        <li data-tab="markers">Markers</li>
+        <li data-tab="photos">Photos</li>
+      </ul>
+    </div>
+    <div class="sidebar-content">
+      <!-- Map Settings Tab -->
+      <div id="mapSettings" class="tab-content active">
+        <div class="control-group">
+          <label for="basemapSelect">Basemap:</label>
+          <select id="basemapSelect">
+            <option value="mapbox://styles/mapbox/streets-v12">Streets</option>
+            <option value="mapbox://styles/mapbox/outdoors-v12">Outdoors</option>
+            <option value="mapbox://styles/mapbox/light-v10">Light</option>
+            <option value="mapbox://styles/mapbox/dark-v10">Dark</option>
+            <option value="mapbox://styles/mapbox/satellite-v9">Satellite</option>
+            <option value="mapbox://styles/mapbox/satellite-streets-v12">Satellite Streets</option>
+          </select>
+        </div>
+        <div class="control-group">
+          <label for="labelSelect">Label on Hover:</label>
+          <select id="labelSelect">
+            <option value="">None</option>
+            <option value="name">Name</option>
+            <option value="address">Address</option>
+            <option value="year">Year</option>
+          </select>
+        </div>
+        <div class="control-group">
+          <label for="routingToggle">Enable Routing:</label>
+          <input type="checkbox" id="routingToggle" />
+        </div>
+        <div class="control-group">
+          <label for="markerToggle">Show Campgrounds:</label>
+          <input type="checkbox" id="markerToggle" checked />
+        </div>
+        <div class="control-group">
+          <label for="parksToggle">Show National Parks:</label>
+          <input type="checkbox" id="parksToggle" />
+        </div>
+      </div>
+      <!-- Trip Planning Tab -->
+      <div id="tripPlanning" class="tab-content">
+        <div class="control-group">
+          <label for="tripSelect">Trips:</label>
+          <select id="tripSelect" multiple>
+            <option value="">None</option>
+          </select>
+        </div>
+        <div class="control-group">
+          <button id="planFutureTripButton">Plan/Edit New Trips</button>
+        </div>
+        <!-- Editing controls (hidden until editing) -->
+        <div id="editingControls" style="display: none;">
+          <button id="saveTripChangesButton" class="btn-save">Save Changes</button>
+          <button id="discardTripChangesButton" class="btn-discard">Discard Changes</button>
+          <button id="exitEditTripButton" class="btn-exit">Exit Edit Mode</button>
+        </div>
+        <div class="control-group">
+          <button id="openDeleteTripModalButton">Delete Planned Trip</button>
+        </div>
+      </div>
+      <!-- Markers Tab -->
+      <div id="markers" class="tab-content">
+<!-- <div class="control-group">
+  <button id="addCampgroundButton">Add Campground/POI</button>
+</div> -->
+        <div class="control-group">
+          <button id="editCampgroundButton">Edit Campground</button>
+        </div>
+        <div class="control-group">
+          <button id="streetViewButton">Street View</button>
+        </div>
+      </div>
+      <!-- Photos Tab -->
+      <div id="photos" class="tab-content">
+        <div class="control-group">
+          <label for="photoInput">Add Photo:</label>
+          <input type="file" id="photoInput" accept="image/*" />
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Extra UI Elements -->
+  <div id="drop-zone">Drop your photo here</div>
+  <div id="cursor-coords">Lat: --, Lng: --</div>
+  <div id="route-info"></div>
+  <div id="tripDistances"></div>
+
+  <!-- Modals -->
+  <div id="photoModal">
+    <span id="closeModal">×</span>
+    <div id="modalContent">
+      <img id="largePhoto" alt="Large Photo">
+    </div>
+  </div>
+  <div id="streetViewProviderModal">
+    <div id="providerModalContent">
+      <label for="providerSelect">Select Street View Provider:</label>
+      <select id="providerSelect">
+        <option value="apple">Apple Look Around</option>
+        <option value="bing">Bing Maps</option>
+        <option value="google">Google Maps</option>
+        <option value="kartaview">KartaView</option>
+        <option value="mapillary">Mapillary</option>
+      </select>
+      <br>
+      <button id="providerConfirm">Confirm</button>
+      <button id="providerCancel">Cancel</button>
+    </div>
+  </div>
+  <div id="addCampgroundModal">
+    <div id="addCampgroundModalContent">
+      <label for="campgroundName">Campground/POI Name:</label>
+      <input type="text" id="campgroundName" placeholder="Enter name" />
+      <label for="campgroundAddress">Address (Optional):</label>
+      <input type="text" id="campgroundAddress" placeholder="Enter address" />
+      <label for="campgroundYear">Year (Optional):</label>
+      <input type="number" id="campgroundYear" placeholder="Enter year" />
+      <br>
+      <button id="addCampgroundSubmit">Add</button>
+      <button id="addCampgroundCancel">Cancel</button>
+    </div>
+  </div>
+  <div id="editCampgroundModal">
+    <div id="editCampgroundModalContent">
+      <label for="editCampgroundSelect">Select Campground:</label>
+      <select id="editCampgroundSelect"></select>
+      <label for="editCampgroundName">Campground Name:</label>
+      <input type="text" id="editCampgroundName" placeholder="Enter name" />
+      <label for="editCampgroundAddress">Address:</label>
+      <input type="text" id="editCampgroundAddress" placeholder="Enter address" />
+      <label for="editCampgroundLatitude">Latitude:</label>
+      <input type="number" id="editCampgroundLatitude" step="any" readonly />
+      <label for="editCampgroundLongitude">Longitude:</label>
+      <input type="number" id="editCampgroundLongitude" step="any" readonly />
+      <label for="editCampgroundYear">Year (Optional):</label>
+      <input type="number" id="editCampgroundYear" placeholder="Enter year" />
+      <br>
+      <button id="editCampgroundSubmit">Save</button>
+      <button id="deleteCampground">🗑 Delete</button>
+      <button id="editCampgroundCancel">Cancel</button>
+    </div>
+  </div>
+  <div id="futureTripModal">
+    <div id="futureTripModalContent">
+      <label for="futureTripSelect">Select Trip:</label>
+      <select id="futureTripSelect">
+        <option value="new">New Trip</option>
+      </select>
+      <label for="futureTripNameInput" id="tripNameLabel">Trip Name:</label>
+      <input type="text" id="futureTripNameInput" placeholder="Enter trip name" />
+      <br>
+      <button id="futureTripEnter">Enter</button>
+      <button id="futureTripCancel">Cancel</button>
+    </div>
+  </div>
+  <div id="editTripPointModal">
+    <div id="editTripPointModalContent">
+      <label for="editPointName">Point Name:</label>
+      <input type="text" id="editPointName" placeholder="Enter point name" />
+      <label for="editPointDate">Date:</label>
+      <input type="date" id="editPointDate" />
+      <label for="editPointComments">Comments:</label>
+      <textarea id="editPointComments" placeholder="Enter comments"></textarea>
+      <label for="editPointOrder">Order:</label>
+      <input type="number" id="editPointOrder" />
+      <br>
+      <button id="editTripPointSave">Save</button>
+      <button id="editTripPointCancel">Cancel</button>
+    </div>
+  </div>
+
+  <!-- Delete Trip Modal -->
+  <div id="deleteTripModal" style="display: none;">
+    <div id="deleteTripModalContent">
+      <label for="deleteTripSelect">Select Future Trip to Delete:</label>
+      <select id="deleteTripSelect"></select>
+      <br><br>
+      <button id="confirmDeleteTrip">Delete</button>
+      <button id="cancelDeleteTripModal">Cancel</button>
+    </div>
+  </div>
+
+  <!-- Load our JS files (order is important!) -->
+  <script src="js/globals.js"></script>
+  <script src="js/mapSetup.js"></script>
+  <script src="js/tripPlanning.js"></script>
+  <script src="js/markers.js"></script>
+  <script src="js/photos.js"></script>
+  <script src="js/streetView.js"></script>
+</body>
+</html>
