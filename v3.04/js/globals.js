@@ -1,4 +1,4 @@
-mapboxgl.accessToken = 'pk.eyJ1IjoianBhdGNoIiwiYSI6ImNtNzlkaTB0ZTAzeWEybG9ucnE4Y3U3eWkifQ.1WdZsbljvb-WELZxw2cmtg';
+mapboxgl.accessToken = 'TOKEN HERE';
 
 let globalData = [];
 let csvMarkers = [];
